@@ -11,24 +11,4 @@ export default class GetterContext<K, V> {
 		this.get = get;
 	}
 
-	max(...args: number[]): number {
-		return Math.max(...args);
-	}
-
-	min(...args: number[]): number {
-		return Math.min(...args);
-	}
-
-	floor(n: number): number {
-		return Math.floor(n);
-	}
-
-	ceil(n: number): number {
-		return Math.ceil(n);
-	}
-
-	round(n: number): number {
-		return Math.round(n);
-	}
-
 }

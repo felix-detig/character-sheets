@@ -98,7 +98,6 @@ export default class GetterGraph<K extends Stringifyable, V> {
 	#update(id: K) {
 		let newDependencies: Set<K>;
 
-		// TODO: replace with UserFunctionContext from user-functions
 		const context = new GetterContext<K, V>(id => {
 			newDependencies.add(id);
 
