@@ -1,0 +1,28 @@
+.expandable {
+	display: grid;
+	transition: var(--expandable-transition-duration) ease;
+	overflow: hidden;
+}
+
+.content {
+	overflow: hidden;
+}
+
+.vertical {
+	grid-template: 0fr / 1fr;
+	transition-property: grid-template-rows;
+}
+
+.horizontal {
+	grid-template: 1fr / 0fr;
+	transition-property: grid-template-columns;
+}
+
+.expanded {
+	grid-template: 1fr / 1fr;
+
+	&.animationFinished,
+	> .animationFinished {
+		overflow: visible;
+	}
+}

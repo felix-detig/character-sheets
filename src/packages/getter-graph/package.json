@@ -1,0 +1,6 @@
+{
+	"name": "getter-graph",
+	"type": "module",
+	"exports": "./src/index.ts",
+	"description": "Provides functionality to define interdependant values via getter functions and handles their dependency relationships and updates."
+}

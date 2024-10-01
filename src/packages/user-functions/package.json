@@ -1,0 +1,6 @@
+{
+	"name": "user-functions",
+	"type": "module",
+	"exports": "./src/index.ts",
+	"description": "Handles the interpretation of user defined functions."
+}

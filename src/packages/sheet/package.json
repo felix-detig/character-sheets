@@ -1,0 +1,6 @@
+{
+	"name": "sheet",
+	"type": "module",
+	"exports": "./src/index.ts",
+	"description": "Manages sheet data storage."
+}
