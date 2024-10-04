@@ -83,6 +83,8 @@ export default defineConfig({
 			store: path.resolve(srcPath, 'store'),
 			types: path.resolve(srcPath, 'types'),
 			utils: path.resolve(srcPath, 'utils'),
+			packages: path.resolve(srcPath, 'packages'),
+			integration: path.resolve(srcPath, 'integration'),
 			'getter-graph': path.resolve(srcPath, './packages/getter-graph'),
 			'user-functions': path.resolve(srcPath, './packages/user-functions'),
 			'sheet': path.resolve(srcPath, './packages/sheet'),

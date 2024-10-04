@@ -27,6 +27,8 @@
 			"store": ["src/store"],
 			"types": ["src/types"],
 			"utils": ["src/utils"],
+			"packages": ["src/packages"],
+			"integration": ["src/integration"],
 			"getter-graph": ["src/packages/getter-graph"],
 			"user-functions": ["src/packages/user-functions"],
 			"sheet": ["src/packages/sheet"],

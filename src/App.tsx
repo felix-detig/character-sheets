@@ -1,13 +1,33 @@
 import { Route, Router } from '@solidjs/router';
-import { lazy } from 'solid-js';
+import ElementEditRoute from 'components/routes/ElementEditRoute';
+import ElementListRoute from 'components/routes/ElementList';
+import PlaceholderRoute from 'components/routes/PlaceholderRoute';
+import { GetterGraphProvider } from 'integration/GetterGraph';
+import { SheetProvider } from 'integration/Sheet';
+import { GetterGraph } from 'packages/getter-graph/src';
+import { SheetElementId, SheetRaw } from 'packages/sheet/src';
+import { createSignal } from 'solid-js';
 
-const PlaceholderRoute = lazy(() => import('components/routes/PlaceholderRoute'));
+const sheetPlaceholder: SheetRaw = {
+	title: 'Placeholder',
+	elements: {},
+};
 
 function App() {
+	const [graph] = createSignal(new GetterGraph<SheetElementId, number | boolean>());
+
 	return (
-		<Router>
-			<Route path="/element:id" component={PlaceholderRoute} />
-		</Router>
+		<SheetProvider data={sheetPlaceholder}>
+			<GetterGraphProvider value={graph}>
+				<Router>
+					<Route path="/" component={PlaceholderRoute} />
+					<Route path="/elements">
+						<Route path="/list" component={ElementListRoute} />
+						<Route path="/edit/:id?" component={ElementEditRoute} />
+					</Route>
+				</Router>
+			</GetterGraphProvider>
+		</SheetProvider>
 	);
 }
 

@@ -3,21 +3,15 @@ import { Stringifyable } from './types';
 export class ErrorReference<T extends Stringifyable> extends Error {
 
 	#source: T;
-	#referenced: Error;
 
 	get source() {
 		return this.#source;
 	}
 
-	get referenced() {
-		return this.#referenced;
-	}
-
-	constructor(source: T, referenced: Error) {
-		super(referenced.message);
+	constructor(source: T) {
+		super(`An error occurred at '${source.toString()}'!`);
 
 		this.#source = source;
-		this.#referenced = referenced;
 	}
 
 }

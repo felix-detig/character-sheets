@@ -5,9 +5,9 @@ import GetterGraph from './GetterGraph';
  */
 export default class GetterContext<K, V> {
 	
-	get: (key: K) => V | undefined;
+	get: (key: K[]) => V | undefined;
 
-	constructor(get: (key: K) => V | undefined) {
+	constructor(get: (key: K[]) => V | undefined) {
 		this.get = get;
 	}
 

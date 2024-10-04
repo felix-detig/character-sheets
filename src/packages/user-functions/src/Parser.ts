@@ -17,10 +17,20 @@ export default class Parser {
 	}
 
 	parse(): Ast.Node {
-		return this.#parseOperations();
+		this.#ignore('whitespace');
+
+		const value = this.#parseExpression();
+
+		this.#ignore('whitespace');
+
+		if (this.#currentToken.type !== 'eof') {
+			throw new SyntaxError(`Unexpected token '${this.#currentToken.value}'!`);
+		}
+
+		return value;
 	}
 
-	#parseOperations(): Ast.Node {
+	#parseExpression(): Ast.Node {
 		return this.#parseOperationsBoolean();
 	}
 
@@ -31,18 +41,11 @@ export default class Parser {
 		);
 	}
 
-	// TODO: add unary + and -
 	#parseOperationsNot(): Ast.Node {
-		const operator = this.#currentToken;
-
-		if (this.#match('not')) {
-			this.#ignore('whitespace');
-
-			return new Ast.UnaryOperationNode(operator, this.#parseOperationsComparison());
-		}
-		else {
-			return this.#parseOperationsComparison();
-		}
+		return this.#parseUnaryOperation(
+			['not'],
+			() => this.#parseOperationsComparison()
+		);
 	}
 
 	#parseOperationsComparison(): Ast.Node {
@@ -62,6 +65,13 @@ export default class Parser {
 	#parseOperationsMultiplication(): Ast.Node {
 		return this.#parseBinaryOperation(
 			['*', '/', '/_', '/^'],
+			() => this.#parseOperationsSign()
+		);
+	}
+	
+	#parseOperationsSign(): Ast.Node {
+		return this.#parseUnaryOperation(
+			['+', '-'],
 			() => this.#parseOperand()
 		);
 	}
@@ -71,7 +81,7 @@ export default class Parser {
 
 		this.#ignore('whitespace');
 
-		while (operators.includes(this.#currentToken.type)) {
+		while (!this.#done && operators.includes(this.#currentToken.type)) {
 			const operator = this.#currentToken;
 
 			this.#nextToken();
@@ -87,9 +97,23 @@ export default class Parser {
 		return left;
 	}
 
+	
+	#parseUnaryOperation(operators: TokenType[], parseOperand: () => Ast.Node): Ast.Node {
+		if (!operators.includes(this.#currentToken.type)) {
+			return parseOperand();
+		}
+
+		const operator = this.#currentToken;
+
+		this.#nextToken();
+		this.#ignore('whitespace');
+
+		return new Ast.UnaryOperationNode(operator, parseOperand());
+	}
+
 	#parseOperand(): Ast.Node {
 		if (this.#match('(')) {
-			const result = this.parse();
+			const result = this.#parseExpression();
 
 			this.#ignore('whitespace');
 			this.#expect(')');
@@ -99,11 +123,17 @@ export default class Parser {
 		else if (this.#currentToken.type === 'number') {
 			return this.#parseNumber();
 		}
+		else if (this.#currentToken.type === 'true' || this.#currentToken.type === 'false') {
+			return this.#parseBoolean();
+		}
 		else if (this.#currentToken.type === '#') {
 			return this.#parseReference();
 		}
 		else if (this.#currentToken.type === 'if') {
 			return this.#parseIf();
+		}
+		else if (this.#currentToken.type === 'eof') {
+			throw new SyntaxError('Unexpected end of input!');
 		}
 		else {
 			throw new SyntaxError(`Unexpected token '${this.#currentToken.value}'!`);
@@ -118,6 +148,18 @@ export default class Parser {
 		}
 
 		return new Ast.NumberNode(Number.parseFloat(value));
+	}
+
+	#parseBoolean(): Ast.Node {
+		if (this.#match('true')) {
+			return new Ast.BooleanNode(true);
+		}
+		else if (this.#match('false')) {
+			return new Ast.BooleanNode(false);
+		}
+		else {
+			throw new Error(`Invalid boolean token '${this.#currentToken.value}'!`);
+		}
 	}
 
 	#parseReference(): Ast.Node {
@@ -139,7 +181,7 @@ export default class Parser {
 		this.#expect('{');
 		this.#ignore('whitespace');
 
-		const condition = this.parse();
+		const condition = this.#parseExpression();
 
 		this.#ignore('whitespace');
 		this.#expect('}');
@@ -147,7 +189,7 @@ export default class Parser {
 		this.#expect('{');
 		this.#ignore('whitespace');
 
-		const trueBranch = this.parse();
+		const trueBranch = this.#parseExpression();
 
 		this.#ignore('whitespace');
 		this.#expect('}');
@@ -166,7 +208,7 @@ export default class Parser {
 		this.#expect('{');
 		this.#ignore('whitespace');
 
-		const falseBranch = this.parse();
+		const falseBranch = this.#parseExpression();
 
 		this.#ignore('whitespace');
 		this.#expect('}');

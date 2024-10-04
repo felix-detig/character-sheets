@@ -1,7 +1,9 @@
 import * as Char from './Char';
 import type { Token, TokenType } from './types';
 
-const keywords = new Set(['not', 'and', 'or', 'if', 'else', 'for', 'start', 'end', 'step']);
+const keywords = new Set(
+	['not', 'and', 'or', 'if', 'else', 'for', 'start', 'end', 'step', 'true', 'false']
+);
 
 export default class Tokenizer {
 
@@ -62,11 +64,11 @@ export default class Tokenizer {
 					if (Char.isWhiteSpace(this.#currentChar)) {
 						yield this.#tokenizeWhiteSpace();
 					}
-					else if (Char.isIdChar(this.#currentChar)) {
-						yield this.#tokenizeKeyWord();
-					}
 					else if (Char.isNumber(this.#currentChar)) {
 						yield this.#tokenizeNumber();
+					}
+					else if (Char.isIdCharStart(this.#currentChar)) {
+						yield this.#tokenizeKeyWord();
 					}
 					else {
 						yield {
@@ -78,6 +80,12 @@ export default class Tokenizer {
 				}
 			}
 		}
+
+		yield {
+			type: 'eof',
+			location: this.getLocation(),
+			value: ''
+		};
 	}
 
 	#tokenizeNumber(): Token {
@@ -95,7 +103,7 @@ export default class Tokenizer {
 		const token = this.#tokenizeIdentifier();
 
 		if (keywords.has(token.value)) {
-			token.type === token.value;
+			token.type = token.value as TokenType;
 		}
 
 		return token;
@@ -122,9 +130,8 @@ export default class Tokenizer {
 		this.#nextChar();
 		let first = true;
 
-		while (first || this.#currentChar === '.') {
+		while (first || !this.#done && this.#currentChar === '.') {
 			if (!first) {
-				first = false;
 
 				yield {
 					type: '.',
@@ -134,6 +141,8 @@ export default class Tokenizer {
 
 				this.#nextChar();
 			}
+			
+			first = false;
 
 			yield this.#tokenizeIdentifier();
 		}
@@ -204,8 +213,9 @@ export default class Tokenizer {
 	#collect(callback: (char: string) => boolean) {
 		let value = '';
 
-		while (callback(this.#currentChar)) {
+		while (!this.#done && callback(this.#currentChar)) {
 			value += this.#currentChar;
+			this.#nextChar();
 		}
 
 		return value;

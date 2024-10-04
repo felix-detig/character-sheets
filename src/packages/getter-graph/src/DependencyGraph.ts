@@ -338,22 +338,19 @@ export default class DependencyGraph<T extends { toString: () => string }> {
 
 		const node = this.#getNode(id, false);
 
-		if (!node) {
-			return;
+		if (node) {
+			visiting.add(id);
+			
+			for (const dependant of node.dependants) {
+				this.#getAllDependantsTopologicalRec(dependant, visited, visiting, order);
+			}
+			
+			visiting.delete(id);
 		}
-
-		visiting.add(id);
-
-		for (const dependant of node.dependants) {
-			this.#getAllDependantsTopologicalRec(dependant, visited, visiting, order);
-		}
-
-		visiting.delete(id);
 
 		order.unshift(id);
 	}
 
-	// TODO: check for cycles
 	/**
 	 * Traverses the graph in topological order in dependant direction, starting from the node with
 	 * `id`, and executes `callback` at every node (including `id`). If callback returns true, the

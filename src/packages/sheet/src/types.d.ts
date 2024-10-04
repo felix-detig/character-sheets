@@ -4,7 +4,7 @@
  */
 export type SheetRaw = {
 	title: string;
-	elements: { [id: string]: SheetElement };
+	elements: { [id: SheetElementId]: SheetElement };
 }
 
 export type SheetElementId = string;

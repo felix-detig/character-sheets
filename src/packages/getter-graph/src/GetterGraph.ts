@@ -1,5 +1,5 @@
 import DependencyGraph from './DependencyGraph';
-import { ErrorReference } from './Errors';
+import { DependencyCyclesError, ErrorReference } from './Errors';
 import GetterContext from './GetterContext';
 import { Getter, Stringifyable } from './types';
 
@@ -12,7 +12,7 @@ class GetterGraphNode<K, V> {
 	id: K;
 	getter: Getter<K, V> | undefined;
 	value: V | undefined;
-	error: Error | null = null;
+	errors: Error[] = [];
 	listeners = new Set<(value: V | undefined, id: K) => void>();
 
 	constructor(id: K) {
@@ -44,14 +44,24 @@ export default class GetterGraph<K extends Stringifyable, V> {
 	/**
 	 * Define the value associated with the passed `id` via `getter`. If the value is different than
 	 * before, values dependent on `id` are reevaluated.
+	 * 
+	 * @returns `true` if no errors were encountered during the update, `false` otherwise.
 	 */
-	set(id: K, getter: Getter<K, V>) {
+	set(id: K, getter: Getter<K, V>): boolean {
 		const node = this.#getNode(id, true);
 		
 		node.getter = getter;
 		node.value = undefined;
 
-		this.#update(id);
+		return this.#update(id);
+	}
+
+	/** 
+	 * Returns a an array of errors in the order they occurred when running the corresponding
+	 * getter. 
+	 */
+	getErrors(id: K): readonly Error[] {
+		return this.#nodesById.get(id)?.errors ?? [];
 	}
 
 	// TODO: dependency cycle information (pass id as first parameter)
@@ -60,12 +70,11 @@ export default class GetterGraph<K extends Stringifyable, V> {
 	 * other values or the underlying dependency graph.
 	 */
 	test(getter: Getter<K, V>) {
-		const context = new GetterContext<K, V>(id => this.get(id));
+		const context = new GetterContext<K, V>(([id]) => this.get(id));
 
 		return getter(context);
 	}
 
-	// TODO: handle deleted values (do they need further handling?)
 	delete(id: K) {
 		this.#nodesById.delete(id);
 		this.#dispatch(id, undefined);
@@ -93,12 +102,12 @@ export default class GetterGraph<K extends Stringifyable, V> {
 		}
 	}
 
-	// TODO: detect cycles
 	// TODO: nicer errors
-	#update(id: K) {
+	#update(id: K): boolean {
 		let newDependencies: Set<K>;
+		let noErrors = true;
 
-		const context = new GetterContext<K, V>(id => {
+		const context = new GetterContext<K, V>(([id]) => {
 			newDependencies.add(id);
 
 			const node = this.#getNode(id);
@@ -107,15 +116,16 @@ export default class GetterGraph<K extends Stringifyable, V> {
 				throw new Error('Undefined!');
 			}
 
-			if (node.error) {
-				if (node.error instanceof ErrorReference) {
-					throw node.error;
+			if (node.errors.length) {
+				// TODO: revise if multiple errors are checked per run
+				if (node.errors[0] instanceof ErrorReference) {
+					throw node.errors[0];
 				}
 
-				throw new ErrorReference(node.id, node.error);
+				throw new ErrorReference(node.id);
 			}
 
-			if (node?.value === undefined) {
+			if (node.value === undefined) {
 				throw new Error('Huh?');
 			}
 
@@ -124,7 +134,7 @@ export default class GetterGraph<K extends Stringifyable, V> {
 
 		this.#depGraph.traverseDependantsTopological(id, id => {
 			const node = this.#getNode(id);
-
+			
 			if (!node) {
 				throw new Error('No node');
 			}
@@ -134,19 +144,20 @@ export default class GetterGraph<K extends Stringifyable, V> {
 			}
 
 			newDependencies = new Set();
-                
+			node.errors = [];
+            
 			const oldValue = node.value;
 			let newValue;
 
 			try {
 				newValue = node.getter(context);
-				node.error = null;
 			}
 			catch(error) {
-				node.error = error as Error;
+				noErrors = false;
+				node.errors.push(error as Error);
 				newValue = undefined;
 			}
-
+			
 			node.value = newValue;
 			this.#depGraph.setDependencies(id, newDependencies);
 
@@ -158,6 +169,39 @@ export default class GetterGraph<K extends Stringifyable, V> {
 
 			return true;
 		});
+		
+		return this.#checkDependencyCycles(id) && noErrors;
+	}
+
+	/**
+	 * @returns `true` if no cycles were found, `false` otherwise. 
+	 */
+	#checkDependencyCycles(id: K): boolean {
+		const cycles = this.#depGraph.getCycles(id);
+
+		if (!cycles.length) {
+			return true;
+		}
+
+		const affectedIds = new Set<K>();
+
+		for (const cycle of cycles) {
+			for (const id of cycle) {
+				affectedIds.add(id);
+			}
+		}
+
+		const error = new DependencyCyclesError(cycles);
+		
+		for (const id of affectedIds) {
+			const node = this.#getNode(id);
+
+			if (node) {
+				node.errors.push(error);
+			}
+		}
+
+		return false;
 	}
 	
 	#getNode(id: K): GetterGraphNode<K, V> | undefined;
@@ -173,84 +217,5 @@ export default class GetterGraph<K extends Stringifyable, V> {
 
 		return node;
 	}
-	
-	/**
-	 * From Leaves top down update
-	 */
-	// #update(id: K) {
-	// 	const oldValue = this.#valuesById.get(id);
-
-	// 	this.#valuesById.delete(id);
-
-	// 	const called = new Set<K>();
-	// 	const stack = [] as { id: K, dependencies: Set<K> }[];
-	// 	const newDependenciesById = new Map<K, Set<K>>().set(id, stack[0].dependencies);
-	// 	const context = new GetterContext((id: K) => {
-	// 		stack.at(-1)!.dependencies.add(id);
-	// 		stack.push({ id, dependencies: new Set() });
-
-	// 		const value = this.#resolve(id, context, called);
-	// 		const { dependencies } = stack.pop()!;
-
-	// 		newDependenciesById.set(id, dependencies);
-
-	// 		return value;
-	// 	});
-
-	// 	for (const [id, newDependencies] of newDependenciesById) {
-	// 		this.#depGraph.setDependencies(id, newDependencies);
-	// 	}
-
-	// 	stack.push({ id, dependencies: new Set() });
-	// 	const newValue = this.#resolve(id, context, new Set());
-	// 	stack.pop();
-
-	// 	if (sameValueZero(oldValue, newValue)) {
-	// 		return;
-	// 	}
-
-	// 	const leaves = new Set<K>();
-
-	// 	this.#depGraph.dfsDependants(id, (dependant, isLeaf) => {
-	// 		this.#valuesById.delete(dependant);
-			
-	// 		if (isLeaf) {
-	// 			leaves.add(dependant);
-	// 		}
-	// 	});
-
-	// 	for (const leaf of leaves) {
-	// 		stack.push({ id: leaf, dependencies: new Set() });
-	// 		this.#resolve(leaf, context, new Set());
-	// 		stack.pop();
-	// 	}
-	// }
-
-	// #resolve(id: K, context: GetterContext<K, V>, called = new Set<K>()): V {
-	// 	if (this.#valuesById.has(id)) {
-	// 		return this.#valuesById.get(id) as V;
-	// 	}
-
-	// 	if (called.has(id)) {
-	// 		// TODO: do meaningful dependency cycle error
-	// 		throw new Error('');
-	// 	}
-	// 	else {
-	// 		called.add(id);
-	// 	}
-
-	// 	const getter = this.#valueGettersById.get(id);
-
-	// 	if (!getter) {
-	// 		throw new Error(`No getter function registered for id '${id.toString()}'!`);
-	// 	}
-
-	// 	const value = getter(context);
-
-	// 	this.#valuesById.set(id, value);
-	// 	this.#dispatch(id, value);
-
-	// 	return value;
-	// }
 
 }
