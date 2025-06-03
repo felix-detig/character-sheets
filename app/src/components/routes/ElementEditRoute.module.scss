@@ -1,0 +1,18 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.idContainer {
+	display: flex;
+	gap: 1rem;
+
+	.idInput {
+		flex: 1 1;
+	}
+
+	.idLinkButton {
+		flex: 0 0 auto;
+	}
+}

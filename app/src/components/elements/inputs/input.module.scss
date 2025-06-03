@@ -1,0 +1,27 @@
+.input {
+	flex: 1;
+	line-height: $line-height;
+	font-size: 1rem;
+	font-family: inherit;
+	color: $color-text;
+	border: $border;
+	border-radius: $border-radius;
+	background: $color-background;
+	min-width: 0;
+	min-height: 0;
+	width: auto;
+	padding: .3rem .5rem;
+	transition:
+		border-color ease-out 50ms,
+		color ease-out 50ms;
+
+	&::placeholder {
+		color: rgba($color-text, $opacity-low);
+	}
+	
+	&:focus {
+		color: rgba($color-text, $opacity-high);
+		border-color: $color-text;
+		outline: none;
+	}
+}

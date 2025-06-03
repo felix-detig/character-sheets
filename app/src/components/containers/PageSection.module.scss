@@ -1,0 +1,41 @@
+.section {
+	border: $border;
+	border-width: 0;
+	padding: 1rem 0;
+	
+	&.grow {
+		flex: 1;
+	}
+
+	&.alt {
+		background: $color-surface;
+	}
+
+	& + &.alt, &.alt + & {
+		border-width: $border-width 0 0;
+	}
+
+	&.alt + &.alt {
+		border-width: 0;
+	}
+
+	> .children {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		width: 600px;
+		max-width: 100%;
+		padding-left: 1rem;
+		padding-right: 1rem;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	&.fullWidth > .children {
+		margin: 0;
+	}
+
+	&.scroll {
+		overflow-x: hidden;
+	}
+}

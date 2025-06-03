@@ -1,0 +1,13 @@
+.iconWith {
+	display: inline-flex;
+	align-items: center;
+	gap: .3em;
+
+	&.reverse {
+		flex-direction: row-reverse;
+	}
+
+	> .children {
+		flex: 1;
+	}
+}

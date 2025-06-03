@@ -1,0 +1,5 @@
+{
+	"name": "custom-functions",
+	"exports": "./src/*",
+	"description": "Provides functionality regarding the custom functions users can define to create values and define dependencies."
+}

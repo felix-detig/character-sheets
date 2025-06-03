@@ -1,6 +1,4 @@
-# bibidi babidi
-
-Interessantes in [src/packages](src/packages).
+# Character Sheet Creation App
 
 ## Usage
 

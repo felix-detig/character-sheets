@@ -1,0 +1,38 @@
+{
+	"compilerOptions": {
+		"target": "ES2020",
+		"useDefineForClassFields": true,
+		"module": "ESNext",
+		"lib": ["ES2020", "DOM", "DOM.Iterable"],
+		"types": ["node"],
+		"skipLibCheck": true,
+
+		/* Bundler mode */
+		"moduleResolution": "bundler",
+		"allowImportingTsExtensions": true,
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"noEmit": true,
+		"jsx": "preserve",
+		"jsxImportSource": "solid-js",
+
+		/* Linting */
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		"baseUrl": "./src",
+		"paths": {
+			"assets": ["assets"],
+			"components": ["components"],
+			"state": ["state"],
+			"styles": ["styles"],
+			"types": ["types"],
+			"utils": ["utils"],
+			"packages": ["packages"],
+			"getter-graph": ["packages/getter-graph/index"],
+			"user-function": ["packages/user-function/index"],
+			"sheet": ["packages/sheet/index"],
+		}
+	}
+}

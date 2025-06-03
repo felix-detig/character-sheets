@@ -1,0 +1,74 @@
+.dragging {
+    touch-action: none;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+    column-gap: 1rem;
+    min-width: 0;
+    min-height: 0;
+    // position: relative;
+}
+
+.cell {
+    border-radius: $border-radius;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    height: 5rem;
+    padding-bottom: 1rem;
+    overflow: hidden;
+    pointer-events: none;
+
+    .cellOverlay {
+        border-radius: $border-radius;
+        background: rgb(255, 255, 255, 0.05);
+        opacity: 0;
+        transition: opacity ease-out 200ms;
+        cursor: grab;
+    }
+
+    .cellOverlay:active, &.dragged > .cellOverlay {
+        opacity: 1;
+        transition: opacity ease-in 400ms;
+    }
+
+    > * {
+        pointer-events: all;
+        grid-column: 1;
+        grid-row: 1;
+    }
+}
+
+.dummyCell {
+    grid-column: 1;
+    visibility: hidden;
+}
+
+.draggedCellContainer {
+    position: absolute;
+    transition: width ease-out 100ms;
+    z-index: 9999;
+
+    .cell {
+        .cellOverlay {
+            cursor: grabbing;
+            transition: none;
+        }
+    }
+}
+
+.draggedItemContainer {
+    pointer-events: none;
+    box-shadow: 0 2px 16px 0 rgb(0 0 0 / 50%);
+}
+
+.transitionTransform {
+    transition: transform 150ms ease-out;
+}
+
+.hide {
+    display: none;
+}
