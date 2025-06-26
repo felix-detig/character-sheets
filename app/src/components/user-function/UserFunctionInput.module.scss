@@ -1,14 +1,9 @@
 .input {
-	white-space: pre-wrap;
-
 	&.empty::before {
 		content: attr(placeholder);
 		color: rgba($color-text, $opacity-low);
 		user-select: none;
 		cursor: text;
-	}
-
-	&::after {
-		// content: '\200b';
+		position: absolute;
 	}
 }

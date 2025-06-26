@@ -1,14 +1,47 @@
-import type * as Cst from './Cst';
 import type { Token, TokenType } from './Token';
+
+export type NodeType =
+	| 'binaryOperation'
+	| 'boolean'
+	| 'expressions'
+	| 'if'
+	| 'invalid'
+	| 'number'
+	| 'parenthesized'
+	| 'reference'
+	| 'unaryOperation';
+
+export type NodeStatus = 'ok' | 'error';
+
+export type Node = {
+	kind: 'cst',
+	type: NodeType,
+	children: (Node | Token)[],
+	status: NodeStatus;
+};
+
+export function toString(node: Node | Token): string {
+	if (node.kind === 'token') {
+		return node.value;
+	}
+
+	let output = '';
+
+	for (const child of node.children) {
+		output += toString(child);
+	}
+
+	return output;
+}
 
 const EXPECTED_ERROR = {};
 
-export default class CstParser {
+export class Parser {
 
 	#tokens: Iterator<Token, Token, Token>;
 	#readTokens: Token[] = [];
 	#readTokenIndex: number = 0;
-	#ruleStack: Cst.Node[] = [];
+	#ruleStack: Node[] = [];
 	#eofToken: Token | null = null;
 
 	constructor(tokens: Iterable<Token>) {
@@ -19,20 +52,31 @@ export default class CstParser {
 		return this.#readTokenIndex === 0 && !!this.#eofToken;
 	}
 
-	parse(): Cst.Node {
-		return this.#parseExpressions('eof');
+	parse(): Node {
+		return this.#parseExpressions('eof', true);
 	}
 
-	#parseExpressions(endTokenType: TokenType): Cst.Node {
+	#parseExpressions(endTokenType: TokenType, allowTrailingWhitespace: boolean = false): Node {
 		return this.#rule('expressions', () => {
-			this.#consumeWhitespace();
+			this.#noWhitespace();
 
 			while (!this.done() && !this.#matches(endTokenType)) {
 				const prevToken = this.#peek();
 
 				try {
 					this.#addChild(this.#parseExpression());
-					this.#consumeWhitespace();
+
+					const token = this.#peekNonWhitespace();
+
+					if (token.type !== endTokenType) {
+						this.#whitespace();
+					}
+					else if (allowTrailingWhitespace && this.#matches('whitespace')) {
+						this.#whitespace();
+					}
+					else {
+						this.#noWhitespace();
+					}
 				}
 				catch {
 					// handled by following infinite loop safeguard
@@ -48,92 +92,92 @@ export default class CstParser {
 		});
 	}
 
-	#parseExpression(): Cst.Node {
+	#parseExpression(): Node {
 		return this.#parseOperations();
 	}
 
-	#parseOperations(): Cst.Node {
+	#parseOperations(): Node {
 		return this.#parseOperationsBoolean();
 	}
 
-	#parseOperationsBoolean(): Cst.Node {
+	#parseOperationsBoolean(): Node {
 		return this.#parseBinaryOperation(
 			['and', 'or'],
 			() => this.#parseOperationsNot()
 		);
 	}
 
-	#parseOperationsNot(): Cst.Node {
+	#parseOperationsNot(): Node {
 		return this.#parseUnaryOperation(
 			['not'],
 			() => this.#parseOperationsComparison()
 		);
 	}
 
-	#parseOperationsComparison(): Cst.Node {
+	#parseOperationsComparison(): Node {
 		return this.#parseBinaryOperation(
 			['<', '<=', '=', '>', '>='],
 			() => this.#parseOperationsAddition()
 		);
 	}
 
-	#parseOperationsAddition(): Cst.Node {
+	#parseOperationsAddition(): Node {
 		return this.#parseBinaryOperation(
 			['+', '-'],
 			() => this.#parseOperationsMultiplication()
 		);
 	}
 
-	#parseOperationsMultiplication(): Cst.Node {
+	#parseOperationsMultiplication(): Node {
 		return this.#parseBinaryOperation(
 			['*', '/', '/_', '/^'],
 			() => this.#parseOperationsSign()
 		);
 	}
 	
-	#parseOperationsSign(): Cst.Node {
+	#parseOperationsSign(): Node {
 		return this.#parseUnaryOperation(
 			['+', '-'],
 			() => this.#parseOperand()
 		);
 	}
 
-	#parseBinaryOperation(operators: TokenType[], parseOperand: () => Cst.Node): Cst.Node {
+	#parseBinaryOperation(operators: TokenType[], parseOperand: () => Node): Node {
 		let left = parseOperand();
 
-		this.#skipWhitespace();
-
-		while (operators.includes(this.#peek().type)) {
+		while (operators.includes(this.#peekNonWhitespace().type)) {
 			left = this.#rule('binaryOperation', () => {
 				this.#addChild(left);
+				this.#whitespace();
 				this.#advance();
-				this.#skipWhitespace();
 				this.#consume();
+				this.#whitespace();
 				this.#addChild(parseOperand());
-				this.#skipWhitespace();
 			});
 		}
 
 		return left;
 	}
 
-	#parseUnaryOperation(operators: TokenType[], parseOperand: () => Cst.Node): Cst.Node {
+	#parseUnaryOperation(operators: TokenType[], parseOperand: () => Node): Node {
 		if (!operators.includes(this.#peek().type)) {
 			return parseOperand();
 		}
 
 		return this.#rule('unaryOperation', () => {
 			this.#advance();
-			this.#skipWhitespace();
+			this.#whitespace();
 			this.#addChild(this.#parseUnaryOperation(operators, parseOperand));
 		});
 	}
 
-	#parseOperand(): Cst.Node {
+	#parseOperand(): Node {
 		if (this.#matches('(')) {
 			return this.#rule('parenthesized', () => {
 				this.#require('(');
+				this.#noWhitespace();
 				this.#addChild(this.#parseExpressions(')'));
+				this.#noWhitespace();
 				this.#require(')');
 			});
 		}
@@ -160,7 +204,7 @@ export default class CstParser {
 		}
 	}
 
-	#parseNumber(): Cst.Node {
+	#parseNumber(): Node {
 		return this.#rule('number', () => {
 			this.#require('number');
 			
@@ -173,7 +217,7 @@ export default class CstParser {
 		});
 	}
 
-	#parseBoolean(): Cst.Node {
+	#parseBoolean(): Node {
 		return this.#rule('boolean', () => {
 			if (!this.#expect('true')) {
 				this.#require('false');
@@ -181,7 +225,7 @@ export default class CstParser {
 		});
 	}
 
-	#parseReference(): Cst.Node {
+	#parseReference(): Node {
 		return this.#rule('reference', () => {
 			this.#require('#');
 	
@@ -195,37 +239,68 @@ export default class CstParser {
 		});
 	}
 
-	#parseIf(): Cst.Node {
+	#parseIf(): Node {
 		return this.#rule('if', () => {
 			this.#require('if');
-			this.#consumeWhitespace();
+			this.#whitespace();
 			this.#require('{');
 			this.#addChild(this.#parseExpressions('}'));
 			this.#require('}');
-			this.#consumeWhitespace();
+			this.#whitespace();
 			this.#require('{');
 			this.#addChild(this.#parseExpressions('}'));
 			this.#require('}');
-			this.#consumeWhitespace();
+			this.#whitespace();
 
 			if (!this.#expect('else')) {
 				return;
 			}
+			
+			this.#whitespace();
 
-			this.#consumeWhitespace();
-			this.#addChild(this.#parseIf());
+			if (this.#matches('if')) {
+				this.#addChild(this.#parseIf());
+			}
+			else {
+				this.#require('{');
+				this.#addChild(this.#parseExpressions('}'));
+				this.#require('}');
+			}
 		});
 	}
 	
-	#consumeWhitespace() {
-		this.#skipWhitespace();
-		this.#consume();
+	// #consumeWhitespace() {
+	// 	this.#skipWhitespace();
+	// 	this.#consume();
+	// }
+
+	// #skipWhitespace() {
+	// 	while (this.#matches('whitespace')) {
+	// 		this.#advance();
+	// 	}
+	// }
+
+	#whitespace() {
+		if (!this.#expect('whitespace')) {
+			const token: Token = {
+				kind: 'token',
+				type: 'whitespace',
+				value: ' ',
+				location: this.#peek().location,
+			};
+
+			this.#addChild(token);
+		}
 	}
 
-	#skipWhitespace() {
-		while (this.#matches('whitespace')) {
-			this.#advance();
+	#noWhitespace() {
+		if (this.#matches('whitespace')) {
+			this.#readTokens.splice(this.#readTokenIndex, 1);
 		}
+	}
+
+	#peekNonWhitespace() {
+		return this.#matches('whitespace') ? this.#peek(1) : this.#peek();
 	}
 
 	#require(tokenType: TokenType) {
@@ -264,11 +339,11 @@ export default class CstParser {
 		this.#readTokenIndex = 0;
 	}
 
-	#addChild(child: Cst.Node | Token) {
+	#addChild(child: Node | Token) {
 		this.#ruleStack.at(-1)!.children.push(child);
 	}
 
-	#status(status: Cst.NodeStatus) {
+	#status(status: NodeStatus) {
 		const node = this.#node();
 
 		if (node) {
@@ -276,12 +351,12 @@ export default class CstParser {
 		}
 	}
 
-	#node(): Cst.Node | null {
+	#node(): Node | null {
 		return this.#ruleStack.at(-1) ?? null;
 	}
 
-	#rule(nodeType: Cst.NodeType, factory: () => void): Cst.Node {
-		const rule: Cst.Node = { kind: 'cst', type: nodeType, children: [], status: 'ok' };
+	#rule(nodeType: NodeType, factory: () => void): Node {
+		const rule: Node = { kind: 'cst', type: nodeType, children: [], status: 'ok' };
 
 		this.#ruleStack.push(rule);
 

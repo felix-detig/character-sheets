@@ -1,17 +1,16 @@
 import type { UserFunctionContext } from './src/types';
 import type { Token } from './src/Token';
-import CstParser from './src/CstParser';
 import AstParser from './src/AstParser';
 import Tokenizer from './src/Tokenizer';
 import { evaluate } from './src/Ast';
 import type * as Ast from './src/Ast';
-import type * as Cst from './src/Cst';
 import { time } from 'utils/Debug';
+import * as Cst from './src/Cst';
 
 export type * from './src/types';
 export type * from './src/Token';
-export { Tokenizer, CstParser, AstParser };
-export type { Cst, Ast };
+export { Tokenizer, AstParser };
+export { Cst, Ast };
 
 export function interpret(input: Iterable<string>, context: UserFunctionContext): number | boolean {
 	const tokenizer = new Tokenizer(input);

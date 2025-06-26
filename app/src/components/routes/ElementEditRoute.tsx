@@ -15,8 +15,7 @@ import { Layout } from 'sheet';
 import styles from './ElementEditRoute.module.scss';
 import * as ObjectUtils from 'utils/Object';
 import { BsLink45deg } from 'solid-icons/bs';
-import CodeInput from 'components/elements/inputs/CodeInput';
-import UserFunctionCode from 'components/user-function/UserFunctionCode';
+import UserFunctionInput from 'components/user-function/UserFunctionInput';
 
 type ErrorStructure<T extends Record<any, any>, U> = {
 	[K in keyof T]?: T[K] extends Record<any, any> ? ErrorStructure<T[K], U> : U;
@@ -239,9 +238,11 @@ export default function ElementEditRoute() {
 					</SelectInput>
 				)}
 				{form.definitionType === 'function' && (
-					<CodeInput onInput={body => setForm('definition', { body })}>
-						<UserFunctionCode value={form.definition?.body ?? ''} />
-					</CodeInput>
+					<UserFunctionInput
+						value={form.definition?.body ?? ''}
+						onInput={body => setForm('definition', { body })}
+						placeholder="1 + 2 * ..."
+					/>
 				)}
 			</PageSection>
 			<PageSection>

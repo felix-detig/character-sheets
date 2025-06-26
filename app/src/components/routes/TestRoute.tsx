@@ -1,16 +1,13 @@
 import PageSection from 'components/containers/PageSection';
-import CodeInput from 'components/elements/inputs/CodeInput';
-import UserFunctionCode from 'components/user-function/UserFunctionCode';
+import UserFunctionInput from 'components/user-function/UserFunctionInput';
 import { createSignal } from 'solid-js';
 
 export default function TestRoute() {
 	const [value, setValue] = createSignal('');
 
 	return (
-		<PageSection>
-			<CodeInput placeholder="Test..." onInput={code => setValue(code)}>
-				<UserFunctionCode value={value()} />
-			</CodeInput>
+		<PageSection scroll>
+			<UserFunctionInput placeholder="Test..." value={value()} onInput={setValue} />
 		</PageSection>
 	);
 }

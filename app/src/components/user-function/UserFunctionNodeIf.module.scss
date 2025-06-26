@@ -1,0 +1,33 @@
+.container {
+	border-radius: $border-radius;
+	border: $border;
+	background: $color-surface;
+    display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	width: fit-content;
+	padding: .25em .5em;
+}
+
+.keyword {
+	color: rgba($color-text, $opacity-low);
+	user-select: none;
+	pointer-events: none;
+}
+
+.condition {
+	display: flex;
+	align-items: center;
+	gap: .5em;
+}
+
+.branch {
+	display: flex;
+	// align-items: center;
+	gap: .5em;
+	padding-left: 1em;
+
+	.keyword {
+		padding-top: .4em;
+	}
+}

@@ -49,6 +49,15 @@ export function setCursor(element: HTMLElement, position: number) {
 	selection.addRange(range);
 }
 
+export function parentOffset(parent: Node, child: Node): number {
+	const range = document.createRange();
+
+	range.setStart(parent, 0);
+	range.setEnd(child, 0);
+
+	return range.toString().length;
+}
+
 /**
  * If `offset` points past the end of `parent`, the last text-like node inside parent and the remaining offset from its start are returned.
  * 

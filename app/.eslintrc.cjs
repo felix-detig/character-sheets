@@ -27,7 +27,7 @@ module.exports = {
 			'tsx': 'never',
 			'js': 'never',
 			'jsx': 'never',
-			'*': 'always'
+			// '*': 'always'
 		}],
 		'@typescript-eslint/consistent-type-imports': 'error',
 	},

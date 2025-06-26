@@ -28,7 +28,7 @@ export function isIdCharStart(char: string) {
 	return char === '_' || isLetterLowerCase(char);
 }
 
-export function isWhiteSpace(char: string) {
+export function isWhitespace(char: string) {
 	return (
 		char === ' ' ||
 		char === '\n' ||
